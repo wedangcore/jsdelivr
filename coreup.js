@@ -1,6 +1,5 @@
 // Konfigurasi Klien
-const API_BASE_URL = ''; // Kosongkan karena kita memanggil dari domain yang sama
-const customDomain = 'https://cdn.wbk.web.id';
+const API_BASE_URL = ''; 
 
 const elements = {
     form: document.getElementById("uploadForm"),
