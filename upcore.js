@@ -232,7 +232,7 @@ elements.historyTableBody.addEventListener('click', async (e) => {
         deleteBtn.disabled = true;
 
         try {
-            await axios.delete(`${API_BASE_URL}/files/${fileName}`);
+            await axios.delete(window.location.origin + `/files/${fileName}`);
             removeFromHistory(urlToDelete);
             await renderGlobalFiles(); // Refresh global list
         } catch (error) {
@@ -301,7 +301,7 @@ elements.deleteSelectedButton.addEventListener("click", async () => {
     const itemsToDelete = Array.from(selectedItems);
     const deletePromises = itemsToDelete.map(url => {
         const fileName = url.split('/').pop();
-        return axios.delete(`${API_BASE_URL}/files/${fileName}`);
+        return axios.delete(window.location.origin + `/files/${fileName}`);
     });
 
     try {
@@ -358,7 +358,7 @@ async function downloadFile(fileName, buttonElement) {
 
     try {
         const response = await axios({
-            url: `${API_BASE_URL}/download/${fileName}`,
+            url: window.location.origin + `/download/${fileName}`,
             method: 'GET',
             responseType: 'blob',
         });
@@ -417,7 +417,7 @@ elements.form.addEventListener("submit", async (e) => {
     formData.append('file', file);
 
     try {
-        const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
+        const response = await axios.post(window.location.origin + `/upload`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
@@ -448,7 +448,7 @@ async function renderGlobalFiles() {
     globalPagination.classList.add('hidden'); 
 
     try {
-        const response = await axios.get(`${API_BASE_URL}/files?page=${globalCurrentPage}`);
+        const response = await axios.get(window.location.origin + `/files?page=${globalCurrentPage}`);
         const { files: itemsToDisplay, hasNextPage } = response.data;
         
         globalFileList.innerHTML = ''; 
@@ -465,7 +465,7 @@ async function renderGlobalFiles() {
         itemsToDisplay.forEach(file => {
             if (file.name === '.emptyFolderPlaceholder') return;
 
-            const fileUrl = `${API_BASE_URL}/files/${file.name}`;
+            const fileUrl = window.location.origin + `/files/${file.name}`;
             const fileElement = document.createElement('div');
             fileElement.className = 'flex justify-between items-center p-2 border-b';
             
