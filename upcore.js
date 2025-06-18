@@ -1,5 +1,3 @@
-const API_BASE_URL = window.location.origin; 
-
 const elements = {
     form: document.getElementById("uploadForm"),
     area: document.getElementById("uploadArea"),
