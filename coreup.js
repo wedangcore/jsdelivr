@@ -1,5 +1,4 @@
-// Konfigurasi Klien
-const API_BASE_URL = ''; 
+const API_BASE_URL = window.location.origin; 
 
 const elements = {
     form: document.getElementById("uploadForm"),
