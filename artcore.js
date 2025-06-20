@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (result.imageUrl) {
                 const proxiedUrl = result.imageUrl;
-                const absoluteUrl = window.location.origin + proxiedUrl;
+                const absoluteUrl = proxiedUrl;
                 
                 elements.generatedImage.onload = () => {
                     elements.resultSpinner.style.display = 'none';
