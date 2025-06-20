@@ -1,3 +1,6 @@
+// Konfigurasi Klien
+const API_BASE_URL = '';
+
 const elements = {
     form: document.getElementById("uploadForm"),
     area: document.getElementById("uploadArea"),
@@ -42,6 +45,9 @@ const elements = {
     // Warning Modal
     warningModal: document.getElementById("warning_modal"),
     warningSound: document.getElementById("warning-sound"),
+    // API Docs Modal
+    apiDocsButton: document.getElementById("apiDocsButton"),
+    apiDocumentationModal: document.getElementById("api_documentation_modal"),
 };
 
 // --- Event Listeners for File Input ---
@@ -120,10 +126,10 @@ const setLoadingState = (isLoading) => {
 };
 
 const showResult = (type, message, relativeUrl = null) => {
-    const fullUrl = relativeUrl ? `${relativeUrl}` : null;
+    const fullUrl = relativeUrl ? `${window.location.origin}${relativeUrl}` : null;
     elements.result.value = fullUrl || message;
     elements.copyButton.disabled = (type !== "success" || !fullUrl);
-    
+
     if (type === "success" && fullUrl) {
          saveToHistory(fullUrl); // Simpan URL lengkap ke riwayat
     }
@@ -166,7 +172,7 @@ const renderHistory = () => {
 
     const totalPages = Math.ceil(filteredHistory.length / itemsPerPage) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
-    
+
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const pageItems = filteredHistory.slice(start, end);
@@ -199,7 +205,7 @@ const renderHistory = () => {
     elements.totalPagesSpan.textContent = totalPages;
     elements.prevPage.disabled = currentPage === 1;
     elements.nextPage.disabled = currentPage === totalPages;
-    
+
     updateDeleteSelectedButton();
 };
 
@@ -211,7 +217,7 @@ const updateDeleteSelectedButton = () => {
 elements.historyTableBody.addEventListener('click', async (e) => {
     const copyBtn = e.target.closest('.copy-link');
     if (copyBtn) {
-        copyToClipboard(copyBtn.dataset.url, copyBtn);
+        copyToClipboard(copyBtn.dataset.url, copyBtn, true); // True indicates it's a text button
         return;
     }
 
@@ -230,12 +236,17 @@ elements.historyTableBody.addEventListener('click', async (e) => {
         deleteBtn.disabled = true;
 
         try {
-            await axios.delete(window.location.origin + `/files/${fileName}`);
+            await axios.delete(`${API_BASE_URL}/files/${fileName}`);
             removeFromHistory(urlToDelete);
             await renderGlobalFiles(); // Refresh global list
         } catch (error) {
             console.error('Error deleting file:', error.response ? error.response.data : error.message);
-            alert(`Gagal menghapus file: ${error.response ? error.response.data.error : error.message}`);
+            // alert(`Gagal menghapus file: ${error.response ? error.response.data.error : error.message}`);
+            // Use modal for alert
+            elements.warningModal.querySelector('.py-2').textContent = `Gagal menghapus file: ${error.response ? error.response.data.error : error.message}`;
+            elements.warningModal.showModal();
+            elements.warningSound.play().catch(error => console.log("Playback prevented.", error));
+
             deleteBtn.innerHTML = `Delete`;
             deleteBtn.disabled = false;
         }
@@ -299,7 +310,7 @@ elements.deleteSelectedButton.addEventListener("click", async () => {
     const itemsToDelete = Array.from(selectedItems);
     const deletePromises = itemsToDelete.map(url => {
         const fileName = url.split('/').pop();
-        return axios.delete(window.location.origin + `/files/${fileName}`);
+        return axios.delete(`${API_BASE_URL}/files/${fileName}`);
     });
 
     try {
@@ -308,7 +319,12 @@ elements.deleteSelectedButton.addEventListener("click", async () => {
         await renderGlobalFiles(); // Refresh global list
     } catch (error) {
         console.error('Error deleting selected files:', error.response ? error.response.data : error.message);
-        alert(`Gagal menghapus beberapa file: ${error.response ? error.response.data.error : error.message}`);
+        // alert(`Gagal menghapus beberapa file: ${error.response ? error.response.data.error : error.message}`);
+        // Use modal for alert
+        elements.warningModal.querySelector('.py-2').textContent = `Gagal menghapus beberapa file: ${error.response ? error.response.data.error : error.message}`;
+        elements.warningModal.showModal();
+        elements.warningSound.play().catch(error => console.log("Playback prevented.", error));
+
     } finally {
         button.innerHTML = originalHtml;
         button.disabled = selectedItems.size === 0;
@@ -322,9 +338,9 @@ elements.historyButton.addEventListener('click', () => {
 });
 
 // --- Core Functions ---
-const copyToClipboard = (text, buttonElement) => {
+// Fungsi copyToClipboard yang disesuaikan
+const copyToClipboard = (text, buttonElement, isTextButton = false) => {
     const originalContent = buttonElement.innerHTML;
-    const isTextButton = buttonElement.classList.contains('copy-link');
     const successContent = isTextButton
         ? "Copied!"
         : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-lg text-success" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/></svg>`;
@@ -333,16 +349,22 @@ const copyToClipboard = (text, buttonElement) => {
         buttonElement.innerHTML = successContent;
         if(isTextButton) {
             buttonElement.classList.add("btn-success");
+        } else {
+            buttonElement.classList.remove('btn-outline'); // Remove outline for icon buttons
+            buttonElement.classList.add('btn-success'); // Add success color
         }
         setTimeout(() => {
             buttonElement.innerHTML = originalContent;
             if(isTextButton) {
                  buttonElement.classList.remove("btn-success");
+            } else {
+                buttonElement.classList.add('btn-outline'); // Restore outline
+                buttonElement.classList.remove('btn-success'); // Remove success color
             }
         }, 2000);
     }).catch(err => {
         console.error('Failed to copy: ', err);
-        buttonElement.innerHTML = 'Error';
+        buttonElement.innerHTML = 'Error'; // Display generic error
          setTimeout(() => {
             buttonElement.innerHTML = originalContent;
         }, 2000);
@@ -356,7 +378,7 @@ async function downloadFile(fileName, buttonElement) {
 
     try {
         const response = await axios({
-            url: window.location.origin + `/download/${fileName}`,
+            url: `${API_BASE_URL}/download/${fileName}`,
             method: 'GET',
             responseType: 'blob',
         });
@@ -373,7 +395,12 @@ async function downloadFile(fileName, buttonElement) {
 
     } catch (error) {
         console.error('Error downloading file:', error.response ? error.response.data : error.message);
-        alert(`Gagal mengunduh file: ${error.response ? error.response.data.error : error.message}`);
+        // alert(`Gagal mengunduh file: ${error.response ? error.response.data.error : error.message}`);
+        // Use modal for alert
+        elements.warningModal.querySelector('.py-2').textContent = `Gagal mengunduh file: ${error.response ? error.response.data.error : error.message}`;
+        elements.warningModal.showModal();
+        elements.warningSound.play().catch(error => console.log("Playback prevented.", error));
+
     } finally {
         buttonElement.innerHTML = originalContent;
         buttonElement.disabled = false;
@@ -388,7 +415,7 @@ elements.copyButton.addEventListener("click", (e) => {
 });
 
 const resetForm = () => {
-    elements.input.value = null; 
+    elements.input.value = null;
     elements.info.classList.add("hidden");
     setLoadingState(false);
     updateButtonState(false);
@@ -410,12 +437,12 @@ elements.form.addEventListener("submit", async (e) => {
     }
 
     setLoadingState(true);
-    
+
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-        const response = await axios.post(window.location.origin + `/upload`, formData, {
+        const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
@@ -443,30 +470,30 @@ const globalItemsPerPage = 10;
 async function renderGlobalFiles() {
     const { globalFileList, prevGlobalPage, nextGlobalPage, globalCurrentPageSpan, globalPagination } = elements;
     globalFileList.innerHTML = `<div class="text-center p-4"><span class="loading loading-spinner"></span> Memuat file...</div>`;
-    globalPagination.classList.add('hidden'); 
+    globalPagination.classList.add('hidden');
 
     try {
-        const response = await axios.get(window.location.origin + `/files?page=${globalCurrentPage}`);
+        const response = await axios.get(`${API_BASE_URL}/files?page=${globalCurrentPage}`);
         const { files: itemsToDisplay, hasNextPage } = response.data;
-        
-        globalFileList.innerHTML = ''; 
+
+        globalFileList.innerHTML = '';
 
         if (itemsToDisplay.length === 0 && globalCurrentPage === 1) {
             globalFileList.innerHTML = `<div class="text-center p-4 text-neutral-500">Belum ada file yang di-upload.</div>`;
             return;
         }
-        
-        globalPagination.classList.remove('hidden'); 
+
+        globalPagination.classList.remove('hidden');
         const listElement = document.createElement('div');
         listElement.className = "flex flex-col gap-2";
 
         itemsToDisplay.forEach(file => {
             if (file.name === '.emptyFolderPlaceholder') return;
 
-            const fileUrl = window.location.origin + `/files/${file.name}`;
+            const fileUrl = `${API_BASE_URL}/files/${file.name}`;
             const fileElement = document.createElement('div');
             fileElement.className = 'flex justify-between items-center p-2 border-b';
-            
+
             fileElement.innerHTML = `
                 <div class="flex-grow overflow-hidden">
                     <div class="truncate font-semibold text-sm">
@@ -482,10 +509,10 @@ async function renderGlobalFiles() {
                     </div>
                 </div>
                 <div class="join flex-shrink-0">
-                    <button class="btn btn-xs btn-ghost join-item view-link" 
-                            data-url="${fileUrl}" 
-                            data-mimetype="${file.metadata.mimetype}" 
-                            data-name="${file.name}" 
+                    <button class="btn btn-xs btn-ghost join-item view-link"
+                            data-url="${fileUrl}"
+                            data-mimetype="${file.metadata.mimetype}"
+                            data-name="${file.name}"
                             title="View">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
                     </button>
@@ -503,13 +530,14 @@ async function renderGlobalFiles() {
 
         globalCurrentPageSpan.textContent = globalCurrentPage;
         prevGlobalPage.disabled = globalCurrentPage === 1;
-        nextGlobalPage.disabled = !hasNextPage; 
+        nextGlobalPage.disabled = !hasNextPage;
 
     } catch (error) {
         console.error('Error fetching global file list:', error.response ? error.response.data : error.message);
-        globalFileList.innerHTML = `<div class="alert alert-error rounded-none"><span>Gagal memuat daftar file. Error: ${error.response ? error.response.data.error : error.message}</span></div>`;
+        globalFileList.innerHTML = `<div class="alert alert-error rounded"><span>Gagal memuat daftar file. Error: ${error.response ? error.response.data.error : error.message}</span></div>`;
     }
 }
+
 
 elements.prevGlobalPage.addEventListener('click', () => {
     if (globalCurrentPage > 1) {
@@ -570,7 +598,7 @@ async function showFilePreview(url, mimetype, name) {
             const text = await response.text();
             // Basic HTML escaping
             const escapedText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            content = `<pre class="whitespace-pre-wrap text-left w-full bg-base-300 p-4 rounded-none text-sm">${escapedText}</pre>`;
+            content = `<pre class="whitespace-pre-wrap text-left w-full bg-base-300 p-4 rounded text-sm">${escapedText}</pre>`;
         } else {
             content = `
                 <div class="text-center">
@@ -632,6 +660,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     const savedTheme = localStorage.getItem('theme') || 'light';
     elements.themeToggle.checked = savedTheme === 'dark';
     applyTheme(savedTheme);
+
+    // Initialize API Docs button listener
+    if (elements.apiDocsButton && elements.apiDocumentationModal) {
+        elements.apiDocsButton.addEventListener('click', () => {
+            elements.apiDocumentationModal.showModal();
+        });
+    }
+
+    // Add event listeners for all API code copy buttons
+    const copyCodeButtons = document.querySelectorAll('.copy-api-code-btn');
+    copyCodeButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const codeBlock = e.target.closest('.relative').querySelector('.code-block code');
+            if (codeBlock) {
+                copyToClipboard(codeBlock.textContent, button); // Use the unified copyToClipboard
+            }
+        });
+    });
+
 
     await renderGlobalFiles();
     const { loadingOverlay } = elements;
