@@ -490,7 +490,7 @@ async function renderGlobalFiles() {
         itemsToDisplay.forEach(file => {
             if (file.name === '.emptyFolderPlaceholder') return;
 
-            const fileUrl = `${API_BASE_URL}/files/${file.name}`;
+            const fileUrl = `${window.location.origin}/files/${file.name}`;
             const fileElement = document.createElement('div');
             fileElement.className = 'flex justify-between items-center p-2 border-b';
 
