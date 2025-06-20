@@ -126,7 +126,7 @@ const setLoadingState = (isLoading) => {
 };
 
 const showResult = (type, message, relativeUrl = null) => {
-    const fullUrl = relativeUrl ? `${window.location.origin}${relativeUrl}` : null;
+    const fullUrl = relativeUrl ? `${relativeUrl}` : null;
     elements.result.value = fullUrl || message;
     elements.copyButton.disabled = (type !== "success" || !fullUrl);
 
