@@ -276,7 +276,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const originalImageUrl = URL.createObjectURL(file);
         
-        showGenerationLoading(true, styleText);
         showResultState(true); 
         elements.originalImage.src = originalImageUrl;
         elements.resultStyleTitle.textContent = `${styleText} Style`;
