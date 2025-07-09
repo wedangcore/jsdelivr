@@ -1,11 +1,17 @@
 // --- START: Anti-Inspect/Copy Logic ---
 const warningModal = document.getElementById('warning-modal');
+
+// Fungsi ini tidak akan berfungsi karena tidak ada elemen audio dengan ID 'warning-sound' di HTML.
+// Jika Anda ingin menambahkan suara, pastikan ada tag <audio> di HTML Anda.
+
 const warningSound = document.getElementById('warning-sound');
 
 function showWarningModal() {
     // Play sound and show the modal
     if (warningSound && warningModal) {
         warningSound.play().catch(e => console.error("Audio play failed. User interaction might be required first.", e));
+        warningModal.showModal();
+    } else if (warningModal) {
         warningModal.showModal();
     }
 }
@@ -14,9 +20,17 @@ function showWarningModal() {
 if(warningModal) {
     warningModal.addEventListener('close', () => {
         // Stop and reset the sound
-        warningSound.pause();
-        warningSound.currentTime = 0;
+        if(warningSound) {
+            warningSound.pause();
+            warningSound.currentTime = 0;
+        }
     });
+}
+
+function showWarningModal() {
+    if (warningModal) {
+        warningModal.showModal();
+    }
 }
 
 
@@ -82,7 +96,7 @@ function displayResult(elementId, data) {
     const preElement = codeElement.parentElement;
     codeElement.textContent = JSON.stringify(data, null, 2);
     preElement.classList.remove('bg-success', 'text-success-content', 'bg-error', 'text-error-content');
-    if (data.success) {
+    if (data.success === true || data.status === true) {
         preElement.classList.add('bg-success', 'text-success-content');
     } else {
         preElement.classList.add('bg-error', 'text-error-content');
@@ -173,6 +187,8 @@ async function testgenerateqris(event) {
     const u = document.getElementById('qris_username').value;
     const t = document.getElementById('qris_token').value;
     const a = document.getElementById('qris_amount').value;
+    const taxtype = document.getElementById('qris_taxtype').value;
+    const fee = document.getElementById('qris_fee').value;
 
     try {
         const res = await fetch('/generateqris', {
@@ -183,7 +199,9 @@ async function testgenerateqris(event) {
             body: JSON.stringify({
                 username: u,
                 token: t,
-                amount: a
+                amount: a,
+                taxtype: taxtype,
+                fee: fee
             })
         });
 
