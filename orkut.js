@@ -240,3 +240,18 @@ async function testWithdrawal(event) {
         displayResult('withdraw_result', { success: false, message: err.message });
     }
 }
+
+function copyToClipboard(elementId) {
+    const codeElement = document.getElementById(elementId);
+    const text = codeElement.textContent;
+    if (text && text !== 'Result will be shown here...' && text !== 'Fetching...') {
+        navigator.clipboard.write(text).then(() => {
+            alert('Result copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy result.');
+        });
+    } else {
+        alert('No result to copy.');
+    }
+}
