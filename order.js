@@ -1,13 +1,7 @@
-// --- START: Anti-Inspect/Copy Logic ---
 const warningModal = document.getElementById('warning-modal');
-
-// Fungsi ini tidak akan berfungsi karena tidak ada elemen audio dengan ID 'warning-sound' di HTML.
-// Jika Anda ingin menambahkan suara, pastikan ada tag <audio> di HTML Anda.
-
 const warningSound = document.getElementById('warning-sound');
 
 function showWarningModal() {
-    // Play sound and show the modal
     if (warningSound && warningModal) {
         warningSound.play().catch(e => console.error("Audio play failed. User interaction might be required first.", e));
         warningModal.showModal();
@@ -16,7 +10,6 @@ function showWarningModal() {
     }
 }
 
-// Add event listener for when the modal is closed
 if(warningModal) {
     warningModal.addEventListener('close', () => {
         // Stop and reset the sound
@@ -241,15 +234,29 @@ async function testWithdrawal(event) {
     }
 }
 
+function allowCopyTemporarily(callback) {
+    const copyListener = event => {
+        event.preventDefault();
+        showWarningModal();
+    };
+    document.removeEventListener('copy', copyListener);
+    callback();
+    setTimeout(() => {
+        document.addEventListener('copy', copyListener);
+    }, 100);
+}
+
 function copyToClipboard(elementId) {
     const codeElement = document.getElementById(elementId);
     const text = codeElement.textContent;
     if (text && text !== 'Result will be shown here...' && text !== 'Fetching...') {
-        navigator.clipboard.write(text).then(() => {
-            alert('Result copied to clipboard!');
-        }).catch(err => {
-            console.error('Failed to copy: ', err);
-            alert('Failed to copy result.');
+        allowCopyTemporarily(() => {
+            navigator.clipboard.write(text).then(() => {
+                alert('Result copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy result.');
+            });
         });
     } else {
         alert('No result to copy.');
