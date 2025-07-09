@@ -1,0 +1,40 @@
+* {
+    font-family: 'Google Sans', sans-serif;
+}
+
+/* Added to prevent text selection */
+body {
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}
+
+.block-shadow {
+    box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+}
+
+.btn {
+    transform: none !important;
+}
+
+.btn:active {
+    transform: translateY(2px) translateX(2px) !important;
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1) !important;
+}
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease-in-out;
+}
+
+.collapsible-content.show {
+    max-height: 2500px;
+}
+
+/* Ensure the modal image is responsive */
+.modal-box img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
