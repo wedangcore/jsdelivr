@@ -165,6 +165,54 @@ async function testMutasi(event) {
     }
 }
 
+async function testgenerateqris(event) {
+    event.preventDefault();
+    const resultContainer = document.getElementById('qris_result_container');
+    resultContainer.innerHTML = '<span class="text-base-content/50">Generating QRIS...</span>';
+
+    const u = document.getElementById('qris_username').value;
+    const t = document.getElementById('qris_token').value;
+    const a = document.getElementById('qris_amount').value;
+
+    try {
+        const res = await fetch('/generateqris', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: u,
+                token: t,
+                amount: a
+            })
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            const pre = document.createElement('pre');
+            pre.className = 'bg-error text-error-content p-4 rounded-none w-full';
+            const code = document.createElement('code');
+            code.textContent = JSON.stringify(errorData, null, 2);
+            pre.appendChild(code);
+            resultContainer.innerHTML = '';
+            resultContainer.appendChild(pre);
+            return;
+        }
+
+        const imageBlob = await res.blob();
+        const imageUrl = URL.createObjectURL(imageBlob);
+
+        resultContainer.innerHTML = '';
+        const imgElement = document.createElement('img');
+        imgElement.src = imageUrl;
+        imgElement.className = 'max-w-full h-auto rounded-lg';
+        resultContainer.appendChild(imgElement);
+
+    } catch (err) {
+        resultContainer.innerHTML = `<pre class="bg-error text-error-content p-4 rounded-none w-full"><code>${JSON.stringify({ success: false, message: err.message }, null, 2)}</code></pre>`;
+    }
+}
+
 async function testWithdrawal(event) {
     event.preventDefault();
     const u = document.getElementById('withdraw_username').value;
