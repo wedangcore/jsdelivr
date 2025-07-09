@@ -20,12 +20,13 @@ if(warningModal) {
     });
 }
 
-function showWarningModal() {
-    if (warningModal) {
-        warningModal.showModal();
-    }
-}
+// --- START: Anti-Inspect/Copy Logic (MODIFIED) ---
 
+// Define the function to block copy action
+const blockCopyAction = event => {
+    event.preventDefault();
+    showWarningModal();
+};
 
 // Disable right-click context menu
 document.addEventListener('contextmenu', event => {
@@ -44,11 +45,8 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Disable copy and cut events
-/*document.addEventListener('copy', event => {
-    event.preventDefault();
-    showWarningModal();
-});*/
+// Disable copy and cut events using the named function
+document.addEventListener('copy', blockCopyAction);
 document.addEventListener('cut', event => {
     event.preventDefault();
     showWarningModal();
@@ -145,7 +143,7 @@ async function testOtp(event) {
         const data = await res.json();
         displayResult('otp_result', data);
     } catch (err) {
-         displayResult('otp_result', { success: false, message: err.message });
+       displayResult('otp_result', { success: false, message: err.message });
     }
 }
 
@@ -234,31 +232,35 @@ async function testWithdrawal(event) {
     }
 }
 
+// MODIFIED: Function to temporarily allow copying
 function allowCopyTemporarily(callback) {
-    const copyListener = event => {
-        event.preventDefault();
-        showWarningModal();
-    };
-    document.removeEventListener('copy', copyListener);
+    // Temporarily remove the copy blocker
+    document.removeEventListener('copy', blockCopyAction);
+    
+    // Execute the callback function that performs the copy action
     callback();
+    
+    // Re-add the copy blocker after a very short delay
     setTimeout(() => {
-        document.addEventListener('copy', copyListener);
+        document.addEventListener('copy', blockCopyAction);
     }, 100);
 }
 
+// MODIFIED: Function to copy text to clipboard
 function copyToClipboard(elementId) {
     const codeElement = document.getElementById(elementId);
     const text = codeElement.textContent;
     if (text && text !== 'Result will be shown here...' && text !== 'Fetching...') {
         allowCopyTemporarily(() => {
-            navigator.clipboard.write(text).then(() => {
-                alert('Result copied to clipboard!');
+            // Use writeText for plain text. It's more appropriate and works better.
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Hasil berhasil disalin ke clipboard!');
             }).catch(err => {
-                console.error('Failed to copy: ', err);
-                alert('Failed to copy result.');
+                console.error('Gagal menyalin: ', err);
+                alert('Gagal menyalin hasil.');
             });
         });
     } else {
-        alert('No result to copy.');
+        alert('Tidak ada hasil untuk disalin.');
     }
 }
