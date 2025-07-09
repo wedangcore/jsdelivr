@@ -45,10 +45,10 @@ document.addEventListener('keydown', function(event) {
 });
 
 // Disable copy and cut events
-document.addEventListener('copy', event => {
+/*document.addEventListener('copy', event => {
     event.preventDefault();
     showWarningModal();
-});
+});*/
 document.addEventListener('cut', event => {
     event.preventDefault();
     showWarningModal();
