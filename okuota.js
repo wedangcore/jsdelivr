@@ -111,7 +111,7 @@ async function testLogin(event) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Sec-Ch-Auth': 'Kj9mPq2wZx5tY8nF3vL7rQ1eB4uN6hM2cA9dR8kT5pW3yG0sJ2vL9xQ7mP4tZ8nF1rK6hY3wA5eB0cT2dN8uM7qG4vJ9pL3xR1yF5kW2tA6nQ8mZ0hB7eP4cL9dT3vY1rK5uJ2wG8nF6mQ0tA',
+                'authorization': 'Bearer Kj9mPq2wZx5tY8nF3vL7rQ1eB4uN6hM2cA9dR8kT5pW3yG0sJ2vL9xQ7mP4tZ8nF1rK6hY3wA5eB0cT2dN8uM7qG4vJ9pL3xR1yF5kW2tA6nQ8mZ0hB7eP4cL9dT3vY1rK5uJ2wG8nF6mQ0tA'
             },
             body: JSON.stringify({
                 username: u,
@@ -135,7 +135,7 @@ async function testOtp(event) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Sec-Ch-Auth': 'Kj9mPq2wZx5tY8nF3vL7rQ1eB4uN6hM2cA9dR8kT5pW3yG0sJ2vL9xQ7mP4tZ8nF1rK6hY3wA5eB0cT2dN8uM7qG4vJ9pL3xR1yF5kW2tA6nQ8mZ0hB7eP4cL9dT3vY1rK5uJ2wG8nF6mQ0tA',
+                'authorization': 'Bearer Kj9mPq2wZx5tY8nF3vL7rQ1eB4uN6hM2cA9dR8kT5pW3yG0sJ2vL9xQ7mP4tZ8nF1rK6hY3wA5eB0cT2dN8uM7qG4vJ9pL3xR1yF5kW2tA6nQ8mZ0hB7eP4cL9dT3vY1rK5uJ2wG8nF6mQ0tA'
             },
             body: JSON.stringify({
                 username: u,
@@ -159,7 +159,7 @@ async function testMutasi(event) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Sec-Ch-Auth': 'Kj9mPq2wZx5tY8nF3vL7rQ1eB4uN6hM2cA9dR8kT5pW3yG0sJ2vL9xQ7mP4tZ8nF1rK6hY3wA5eB0cT2dN8uM7qG4vJ9pL3xR1yF5kW2tA6nQ8mZ0hB7eP4cL9dT3vY1rK5uJ2wG8nF6mQ0tA',
+                'authorization': 'Bearer Kj9mPq2wZx5tY8nF3vL7rQ1eB4uN6hM2cA9dR8kT5pW3yG0sJ2vL9xQ7mP4tZ8nF1rK6hY3wA5eB0cT2dN8uM7qG4vJ9pL3xR1yF5kW2tA6nQ8mZ0hB7eP4cL9dT3vY1rK5uJ2wG8nF6mQ0tA'
             },
             body: JSON.stringify({
                 username: u,
@@ -189,7 +189,7 @@ async function testgenerateqris(event) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Sec-Ch-Auth': 'Kj9mPq2wZx5tY8nF3vL7rQ1eB4uN6hM2cA9dR8kT5pW3yG0sJ2vL9xQ7mP4tZ8nF1rK6hY3wA5eB0cT2dN8uM7qG4vJ9pL3xR1yF5kW2tA6nQ8mZ0hB7eP4cL9dT3vY1rK5uJ2wG8nF6mQ0tA',
+                'authorization': 'Bearer Kj9mPq2wZx5tY8nF3vL7rQ1eB4uN6hM2cA9dR8kT5pW3yG0sJ2vL9xQ7mP4tZ8nF1rK6hY3wA5eB0cT2dN8uM7qG4vJ9pL3xR1yF5kW2tA6nQ8mZ0hB7eP4cL9dT3vY1rK5uJ2wG8nF6mQ0tA'
             },
             body: JSON.stringify({
                 username: u,
@@ -222,7 +222,7 @@ async function testWithdrawal(event) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Sec-Ch-Auth': 'Kj9mPq2wZx5tY8nF3vL7rQ1eB4uN6hM2cA9dR8kT5pW3yG0sJ2vL9xQ7mP4tZ8nF1rK6hY3wA5eB0cT2dN8uM7qG4vJ9pL3xR1yF5kW2tA6nQ8mZ0hB7eP4cL9dT3vY1rK5uJ2wG8nF6mQ0tA',
+                'authorization': 'Bearer Kj9mPq2wZx5tY8nF3vL7rQ1eB4uN6hM2cA9dR8kT5pW3yG0sJ2vL9xQ7mP4tZ8nF1rK6hY3wA5eB0cT2dN8uM7qG4vJ9pL3xR1yF5kW2tA6nQ8mZ0hB7eP4cL9dT3vY1rK5uJ2wG8nF6mQ0tA'
             },
             body: JSON.stringify({
                 username: u,
