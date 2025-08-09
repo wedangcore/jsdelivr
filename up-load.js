@@ -48,6 +48,27 @@ const elements = {
     // API Docs Modal
     apiDocsButton: document.getElementById("apiDocsButton"),
     apiDocumentationModal: document.getElementById("api_documentation_modal"),
+    // ===== ELEMEN STATISTIK BARU =====
+    stats: {
+        loader: document.getElementById("stats-loader"),
+        content: document.getElementById("stats-content"),
+        totalFiles: document.getElementById("stats-total-files"),
+        totalSize: document.getElementById("stats-total-size"),
+        uploadSuccess: document.getElementById("stats-upload-success"),
+        uploadFailed: document.getElementById("stats-upload-failed"),
+        storageProgress: document.getElementById("stats-storage-progress"),
+        storageUsageText: document.getElementById("stats-storage-usage-text"),
+        storageUsageValue: document.getElementById("stats-storage-usage-value"),
+        periodTodayFiles: document.getElementById("stats-period-today-files"),
+        periodTodaySize: document.getElementById("stats-period-today-size"),
+        periodWeekFiles: document.getElementById("stats-period-week-files"),
+        periodWeekSize: document.getElementById("stats-period-week-size"),
+        periodMonthFiles: document.getElementById("stats-period-month-files"),
+        periodMonthSize: document.getElementById("stats-period-month-size"),
+        periodYearFiles: document.getElementById("stats-period-year-files"),
+        periodYearSize: document.getElementById("stats-period-year-size"),
+        hourlyActivity: document.getElementById("stats-hourly-activity"),
+    }
 };
 
 // --- Event Listeners for File Input ---
@@ -105,7 +126,7 @@ const displayFileInfo = (file) => {
 const formatFileSize = (bytes) => {
     if (!bytes || bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / k**i).toFixed(2))} ${sizes[i]}`;
 };
@@ -131,11 +152,14 @@ const showResult = (type, message, relativeUrl = null) => {
     elements.copyButton.disabled = (type !== "success" || !fullUrl);
 
     if (type === "success" && fullUrl) {
-         saveToHistory(fullUrl); // Simpan URL lengkap ke riwayat
+         saveToHistory(fullUrl); 
+         incrementSuccessCounter();
+    } else if (type === "error") {
+        incrementFailCounter();
     }
 };
 
-// --- History Management (localStorage) ---
+// --- History & Local Storage Management ---
 let currentPage = 1;
 const itemsPerPage = 5;
 let filteredHistory = [];
@@ -163,6 +187,17 @@ const removeSelectedFromHistory = () => {
     selectedItems.clear();
     renderHistory();
 };
+
+// Functions for success/fail counters
+const incrementSuccessCounter = () => {
+    let count = parseInt(localStorage.getItem('uploadSuccessCount') || '0', 10);
+    localStorage.setItem('uploadSuccessCount', count + 1);
+};
+const incrementFailCounter = () => {
+    let count = parseInt(localStorage.getItem('uploadFailCount') || '0', 10);
+    localStorage.setItem('uploadFailCount', count + 1);
+};
+
 
 const renderHistory = () => {
     const history = getHistory();
@@ -239,10 +274,9 @@ elements.historyTableBody.addEventListener('click', async (e) => {
             await axios.delete(`${API_BASE_URL}/files/${fileName}`);
             removeFromHistory(urlToDelete);
             await renderGlobalFiles(); // Refresh global list
+            await renderStatistics(); // Refresh statistics
         } catch (error) {
             console.error('Error deleting file:', error.response ? error.response.data : error.message);
-            // alert(`Gagal menghapus file: ${error.response ? error.response.data.error : error.message}`);
-            // Use modal for alert
             elements.warningModal.querySelector('.py-2').textContent = `Gagal menghapus file: ${error.response ? error.response.data.error : error.message}`;
             elements.warningModal.showModal();
             elements.warningSound.play().catch(error => console.log("Playback prevented.", error));
@@ -317,10 +351,9 @@ elements.deleteSelectedButton.addEventListener("click", async () => {
         await Promise.all(deletePromises);
         removeSelectedFromHistory();
         await renderGlobalFiles(); // Refresh global list
+        await renderStatistics(); // Refresh statistics
     } catch (error) {
         console.error('Error deleting selected files:', error.response ? error.response.data : error.message);
-        // alert(`Gagal menghapus beberapa file: ${error.response ? error.response.data.error : error.message}`);
-        // Use modal for alert
         elements.warningModal.querySelector('.py-2').textContent = `Gagal menghapus beberapa file: ${error.response ? error.response.data.error : error.message}`;
         elements.warningModal.showModal();
         elements.warningSound.play().catch(error => console.log("Playback prevented.", error));
@@ -338,7 +371,6 @@ elements.historyButton.addEventListener('click', () => {
 });
 
 // --- Core Functions ---
-// Fungsi copyToClipboard yang disesuaikan
 const copyToClipboard = (text, buttonElement, isTextButton = false) => {
     const originalContent = buttonElement.innerHTML;
     const successContent = isTextButton
@@ -350,21 +382,21 @@ const copyToClipboard = (text, buttonElement, isTextButton = false) => {
         if(isTextButton) {
             buttonElement.classList.add("btn-success");
         } else {
-            buttonElement.classList.remove('btn-outline'); // Remove outline for icon buttons
-            buttonElement.classList.add('btn-success'); // Add success color
+            buttonElement.classList.remove('btn-outline'); 
+            buttonElement.classList.add('btn-success'); 
         }
         setTimeout(() => {
             buttonElement.innerHTML = originalContent;
             if(isTextButton) {
                  buttonElement.classList.remove("btn-success");
             } else {
-                buttonElement.classList.add('btn-outline'); // Restore outline
-                buttonElement.classList.remove('btn-success'); // Remove success color
+                buttonElement.classList.add('btn-outline');
+                buttonElement.classList.remove('btn-success');
             }
         }, 2000);
     }).catch(err => {
         console.error('Failed to copy: ', err);
-        buttonElement.innerHTML = 'Error'; // Display generic error
+        buttonElement.innerHTML = 'Error'; 
          setTimeout(() => {
             buttonElement.innerHTML = originalContent;
         }, 2000);
@@ -395,8 +427,6 @@ async function downloadFile(fileName, buttonElement) {
 
     } catch (error) {
         console.error('Error downloading file:', error.response ? error.response.data : error.message);
-        // alert(`Gagal mengunduh file: ${error.response ? error.response.data.error : error.message}`);
-        // Use modal for alert
         elements.warningModal.querySelector('.py-2').textContent = `Gagal mengunduh file: ${error.response ? error.response.data.error : error.message}`;
         elements.warningModal.showModal();
         elements.warningSound.play().catch(error => console.log("Playback prevented.", error));
@@ -454,18 +484,19 @@ elements.form.addEventListener("submit", async (e) => {
 
         showResult("success", "File uploaded successfully!", response.data.url);
         await renderGlobalFiles();
+        await renderStatistics(); // Refresh statistics after successful upload
 
     } catch (error) {
         console.error('Upload failed:', error.response ? error.response.data : error.message);
         showResult("error", error.response ? error.response.data.error : "Upload failed.");
     } finally {
         resetForm();
+        renderStatistics(); // Always refresh stats to update success/fail counters
     }
 });
 
 // --- Global File List Logic with Axios ---
 let globalCurrentPage = 1;
-const globalItemsPerPage = 10;
 
 async function renderGlobalFiles() {
     const { globalFileList, prevGlobalPage, nextGlobalPage, globalCurrentPageSpan, globalPagination } = elements;
@@ -490,7 +521,7 @@ async function renderGlobalFiles() {
         itemsToDisplay.forEach(file => {
             if (file.name === '.emptyFolderPlaceholder') return;
 
-            const fileUrl = `${window.location.origin}/files/${file.name}`;
+            const fileUrl = `${WEBSITE_BASE_URL || window.location.origin}/files/${file.name}`;
             const fileElement = document.createElement('div');
             fileElement.className = 'flex justify-between items-center p-2 border-b';
 
@@ -505,7 +536,7 @@ async function renderGlobalFiles() {
                         <span class="mx-1">|</span>
                         <span class="truncate" title="${file.metadata.mimetype}">${file.metadata.mimetype}</span>
                         <span class="mx-1">|</span>
-                        <span>Updated: ${new Date(file.updated_at).toLocaleString('id-ID')}</span>
+                        <span>Updated: ${new Date(file.updated_at || file.created_at).toLocaleString('id-ID')}</span>
                     </div>
                 </div>
                 <div class="join flex-shrink-0">
@@ -596,7 +627,6 @@ async function showFilePreview(url, mimetype, name) {
             const response = await fetch(url);
             if (!response.ok) throw new Error('Gagal memuat file teks');
             const text = await response.text();
-            // Basic HTML escaping
             const escapedText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             content = `<pre class="whitespace-pre-wrap text-left w-full bg-base-300 p-4 rounded text-sm">${escapedText}</pre>`;
         } else {
@@ -630,7 +660,6 @@ const showWarning = (e) => {
     e.preventDefault();
     elements.warningModal.showModal();
     elements.warningSound.play().catch(error => {
-        // Autoplay was prevented.
         console.log("Playback prevented by browser.", error);
     });
 };
@@ -638,7 +667,7 @@ const showWarning = (e) => {
 document.addEventListener('contextmenu', showWarning);
 let touchTimer;
 document.addEventListener('touchstart', (e) => {
-    touchTimer = setTimeout(() => showWarning(e), 1000); // 1 second hold
+    touchTimer = setTimeout(() => showWarning(e), 1000); 
 });
 document.addEventListener('touchend', () => {
     clearTimeout(touchTimer);
@@ -647,11 +676,60 @@ document.addEventListener('touchmove', () => {
     clearTimeout(touchTimer);
 });
 
-// Stop sound when warning modal is closed
 elements.warningModal.addEventListener('close', () => {
     elements.warningSound.pause();
     elements.warningSound.currentTime = 0;
 });
+
+// ===== FUNGSI STATISTIK BARU =====
+async function renderStatistics() {
+    const { stats } = elements;
+    try {
+        // Update counters from local storage first
+        stats.uploadSuccess.textContent = localStorage.getItem('uploadSuccessCount') || '0';
+        stats.uploadFailed.textContent = localStorage.getItem('uploadFailCount') || '0';
+
+        const { data } = await axios.get(`${API_BASE_URL}/statistics`);
+
+        // Overall
+        stats.totalFiles.textContent = data.totalFiles.toLocaleString('id-ID');
+        stats.totalSize.textContent = formatFileSize(data.totalSize);
+
+        // Storage Usage
+        const totalStorage = 2 * 1024 * 1024 * 1024 * 1024; // 2 TB
+        const usagePercentage = (data.totalSize / totalStorage) * 100;
+        stats.storageProgress.value = data.totalSize;
+        stats.storageProgress.max = totalStorage;
+        stats.storageUsageText.textContent = `${usagePercentage.toFixed(4)}%`;
+        stats.storageUsageValue.textContent = `${formatFileSize(data.totalSize)} / 2 TB`;
+        
+        // Periodic
+        stats.periodTodayFiles.textContent = data.periodStats.today.files.toLocaleString('id-ID');
+        stats.periodTodaySize.textContent = formatFileSize(data.periodStats.today.size);
+        stats.periodWeekFiles.textContent = data.periodStats.week.files.toLocaleString('id-ID');
+        stats.periodWeekSize.textContent = formatFileSize(data.periodStats.week.size);
+        stats.periodMonthFiles.textContent = data.periodStats.month.files.toLocaleString('id-ID');
+        stats.periodMonthSize.textContent = formatFileSize(data.periodStats.month.size);
+        stats.periodYearFiles.textContent = data.periodStats.year.files.toLocaleString('id-ID');
+        stats.periodYearSize.textContent = formatFileSize(data.periodStats.year.size);
+
+        // 24 Hour Activity
+        const maxActivity = Math.max(...data.hourlyActivity, 1); // Avoid division by zero
+        stats.hourlyActivity.innerHTML = data.hourlyActivity.map(count => {
+            const heightPercentage = (count / maxActivity) * 100;
+            const tooltip = `${count} file${count !== 1 ? 's' : ''}`;
+            return `<div class="tooltip" data-tip="${tooltip}"><div class="bg-primary w-full" style="height: ${heightPercentage}%;"></div></div>`;
+        }).join('');
+
+        // Show content
+        stats.loader.classList.add('hidden');
+        stats.content.classList.remove('hidden');
+
+    } catch (error) {
+        console.error('Error fetching statistics:', error);
+        elements.stats.loader.innerHTML = `<div class="alert alert-warning rounded">Gagal memuat statistik.</div>`;
+    }
+}
 
 
 // Initial Load
@@ -674,13 +752,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         button.addEventListener('click', (e) => {
             const codeBlock = e.target.closest('.relative').querySelector('.code-block code');
             if (codeBlock) {
-                copyToClipboard(codeBlock.textContent, button); // Use the unified copyToClipboard
+                copyToClipboard(codeBlock.textContent, button); 
             }
         });
     });
 
-
+    // Render initial data
+    await renderStatistics();
     await renderGlobalFiles();
+    
+    // Hide loading overlay
     const { loadingOverlay } = elements;
     loadingOverlay.style.opacity = '0';
     setTimeout(() => {
