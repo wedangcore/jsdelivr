@@ -201,7 +201,6 @@ const resetForm = () => {
 };
 
 // --- History, Statistics, Core Functions (Mostly Unchanged) ---
-// (Kode untuk history, statistics, copyToClipboard, downloadFile, modals, dll. tetap sama)
 let currentPage = 1;
 const itemsPerPage = 5;
 let filteredHistory = [];
@@ -225,110 +224,6 @@ const removeSelectedFromHistory = () => {
     selectedItems.clear();
     renderHistory();
 };
-const renderHistory = () => { /* ... kode sama ... */ };
-const updateDeleteSelectedButton = () => { /* ... kode sama ... */ };
-async function renderStatistics() { /* ... kode sama ... */ };
-elements.historyTableBody.addEventListener('click', async (e) => { /* ... kode sama ... */ });
-elements.historyTableBody.addEventListener('change', (e) => { /* ... kode sama ... */ });
-elements.searchInput.addEventListener("input", () => { /* ... kode sama ... */ });
-elements.prevPage.addEventListener("click", () => { /* ... kode sama ... */ });
-elements.nextPage.addEventListener("click", () => { /* ... kode sama ... */ });
-elements.selectAllCheckbox.addEventListener('change', e => { /* ... kode sama ... */ });
-elements.deleteSelectedButton.addEventListener("click", async () => { /* ... kode sama ... */ });
-elements.historyButton.addEventListener('click', () => { /* ... kode sama ... */ });
-const copyToClipboard = (text, buttonElement, isTextButton = false) => { /* ... kode sama ... */ };
-async function downloadFile(fileName, buttonElement) { /* ... kode sama ... */ };
-
-// --- Form Submit Handler (LOGIKA BARU) ---
-elements.form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (filesToUpload.length === 0 || elements.submit.disabled) {
-        return;
-    }
-
-    setLoadingState(true);
-    const totalFiles = filesToUpload.length;
-    updateOverallProgress(0, totalFiles);
-
-    for (let i = 0; i < totalFiles; i++) {
-        const file = filesToUpload[i];
-        const fileItemElement = document.getElementById(`file-item-${i}`);
-        const statusElement = fileItemElement.querySelector('.file-status');
-
-        statusElement.textContent = 'Uploading...';
-        statusElement.classList.remove('text-gray-500', 'text-error');
-        statusElement.classList.add('text-blue-500');
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const response = await axios.post(`${API_BASE_URL}/upload`, formData);
-            addResult(response.data.url);
-            statusElement.textContent = 'Success';
-            statusElement.classList.remove('text-blue-500');
-            statusElement.classList.add('text-success');
-        } catch (error) {
-            console.error(`Upload failed for ${file.name}:`, error.response ? error.response.data : error.message);
-            statusElement.textContent = 'Failed';
-            statusElement.classList.remove('text-blue-500');
-            statusElement.classList.add('text-error');
-        }
-
-        updateOverallProgress(i + 1, totalFiles);
-        await renderStatistics(); // Refresh statistik setelah setiap file
-    }
-
-    setLoadingState(false);
-    // Bersihkan antrean setelah selesai, tapi jangan reset hasil
-    filesToUpload = [];
-    elements.input.value = "";
-    elements.fileListContainer.classList.add('hidden');
-    updateButtonState(false);
-});
-
-
-// --- Theme Management & Initial Load ---
-const applyTheme = (theme) => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-};
-elements.themeToggle.addEventListener('change', () => {
-    const theme = elements.themeToggle.checked ? 'dark' : 'light';
-    applyTheme(theme);
-});
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // ... (kode theme management, API docs, copy code, dan loading overlay sama)
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    elements.themeToggle.checked = savedTheme === 'dark';
-    applyTheme(savedTheme);
-
-    if (elements.apiDocsButton && elements.apiDocumentationModal) {
-        elements.apiDocsButton.addEventListener('click', () => {
-            elements.apiDocumentationModal.showModal();
-        });
-    }
-
-    const copyCodeButtons = document.querySelectorAll('.copy-api-code-btn');
-    copyCodeButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            const codeBlock = e.target.closest('.relative').querySelector('.code-block code');
-            if (codeBlock) copyToClipboard(codeBlock.textContent, button);
-        });
-    });
-
-    await renderStatistics();
-
-    elements.loadingOverlay.style.opacity = '0';
-    setTimeout(() => {
-        elements.loadingOverlay.style.display = 'none';
-    }, 500);
-});
-
-// Salin/tempel kembali fungsi-fungsi yang tidak berubah di sini
-// (renderHistory, updateDeleteSelectedButton, copyToClipboard, downloadFile, dll.)
-// Ini untuk memastikan semua fungsionalitas tetap ada.
 const renderHistory = () => {
     const history = getHistory();
     const searchTerm = elements.searchInput.value.toLowerCase();
@@ -368,6 +263,56 @@ const renderHistory = () => {
 const updateDeleteSelectedButton = () => {
     elements.deleteSelectedButton.disabled = selectedItems.size === 0;
 };
+async function renderStatistics() {
+    const { statsLoading, statsData, statsContent, hourlyActivityChart } = elements;
+    statsLoading.classList.remove('hidden');
+    statsData.classList.add('hidden');
+    try {
+        const response = await axios.get(`${API_BASE_URL}/statistics`);
+        const stats = response.data;
+        const totalStorageQuota = 2 * 1024 * 1024 * 1024 * 1024;
+        const usedStorage = stats.storage.totalSize;
+        const percentage = (usedStorage / totalStorageQuota) * 100;
+        elements.statsStorageProgress.value = percentage;
+        elements.statsStorageUsageText.textContent = `${formatFileSize(usedStorage)} / 2 TB`;
+        elements.statsStoragePercentage.textContent = `${percentage.toFixed(4)}%`;
+        elements.statsTotalFiles.textContent = stats.storage.totalFiles.toLocaleString('id-ID');
+        elements.statsTotalSize.textContent = formatFileSize(stats.storage.totalSize);
+        elements.statsUploadSuccess.textContent = stats.storage.uploadSuccess.toLocaleString('id-ID');
+        elements.statsUploadFailed.textContent = stats.storage.uploadFailed.toLocaleString('id-ID');
+        elements.statsTodayFiles.textContent = stats.period.today.files.toLocaleString('id-ID');
+        elements.statsTodaySize.textContent = formatFileSize(stats.period.today.size);
+        elements.statsWeekFiles.textContent = stats.period.thisWeek.files.toLocaleString('id-ID');
+        elements.statsWeekSize.textContent = formatFileSize(stats.period.thisWeek.size);
+        elements.statsMonthFiles.textContent = stats.period.thisMonth.files.toLocaleString('id-ID');
+        elements.statsMonthSize.textContent = formatFileSize(stats.period.thisMonth.size);
+        elements.statsYearFiles.textContent = stats.period.thisYear.files.toLocaleString('id-ID');
+        elements.statsYearSize.textContent = formatFileSize(stats.period.thisYear.size);
+        hourlyActivityChart.innerHTML = '';
+        const hourlyData = stats.activity.last24Hours;
+        const maxActivity = Math.max(...hourlyData) || 1;
+        const now = new Date();
+        const currentHour = now.getHours();
+        const hoursOrder = [];
+        for (let i = 0; i < 24; i++) {
+             hoursOrder.push((currentHour - (23 - i) + 24) % 24);
+        }
+        hoursOrder.forEach(hour => {
+            const count = hourlyData[hour] || 0;
+            const barHeight = (count / maxActivity) * 100;
+            const bar = document.createElement('div');
+            bar.className = 'w-full bg-primary rounded-t tooltip';
+            bar.style.height = `${Math.max(barHeight, 2)}%`;
+            bar.dataset.tip = `${count} uploads at ${hour}:00`;
+            hourlyActivityChart.appendChild(bar);
+        });
+        statsLoading.classList.add('hidden');
+        statsData.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error fetching statistics:', error);
+        elements.statsContent.innerHTML = `<div class="alert alert-error rounded"><span>Gagal memuat statistik.</span></div>`;
+    }
+}
 elements.historyTableBody.addEventListener('click', async (e) => {
     const copyBtn = e.target.closest('.copy-link');
     if (copyBtn) { copyToClipboard(copyBtn.dataset.url, copyBtn, true); return; }
@@ -480,3 +425,88 @@ async function downloadFile(fileName, buttonElement) {
         buttonElement.disabled = false;
     }
 }
+
+// --- Form Submit Handler (LOGIKA BARU) ---
+elements.form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (filesToUpload.length === 0 || elements.submit.disabled) {
+        return;
+    }
+
+    setLoadingState(true);
+    const totalFiles = filesToUpload.length;
+    updateOverallProgress(0, totalFiles);
+
+    for (let i = 0; i < totalFiles; i++) {
+        const file = filesToUpload[i];
+        const fileItemElement = document.getElementById(`file-item-${i}`);
+        const statusElement = fileItemElement.querySelector('.file-status');
+
+        statusElement.textContent = 'Uploading...';
+        statusElement.classList.remove('text-gray-500', 'text-error');
+        statusElement.classList.add('text-blue-500');
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await axios.post(`${API_BASE_URL}/upload`, formData);
+            addResult(response.data.url);
+            statusElement.textContent = 'Success';
+            statusElement.classList.remove('text-blue-500');
+            statusElement.classList.add('text-success');
+        } catch (error) {
+            console.error(`Upload failed for ${file.name}:`, error.response ? error.response.data : error.message);
+            statusElement.textContent = 'Failed';
+            statusElement.classList.remove('text-blue-500');
+            statusElement.classList.add('text-error');
+        }
+
+        updateOverallProgress(i + 1, totalFiles);
+        await renderStatistics(); // Refresh statistik setelah setiap file
+    }
+
+    setLoadingState(false);
+    filesToUpload = [];
+    elements.input.value = "";
+    elements.fileListContainer.classList.add('hidden');
+    updateButtonState(false);
+});
+
+
+// --- Theme Management & Initial Load ---
+const applyTheme = (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+};
+elements.themeToggle.addEventListener('change', () => {
+    const theme = elements.themeToggle.checked ? 'dark' : 'light';
+    applyTheme(theme);
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    elements.themeToggle.checked = savedTheme === 'dark';
+    applyTheme(savedTheme);
+
+    if (elements.apiDocsButton && elements.apiDocumentationModal) {
+        elements.apiDocsButton.addEventListener('click', () => {
+            elements.apiDocumentationModal.showModal();
+        });
+    }
+
+    const copyCodeButtons = document.querySelectorAll('.copy-api-code-btn');
+    copyCodeButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const codeBlock = e.target.closest('.relative').querySelector('.code-block code');
+            if (codeBlock) copyToClipboard(codeBlock.textContent, button);
+        });
+    });
+
+    await renderStatistics();
+
+    elements.loadingOverlay.style.opacity = '0';
+    setTimeout(() => {
+        elements.loadingOverlay.style.display = 'none';
+    }, 500);
+});
