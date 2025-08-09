@@ -36,8 +36,6 @@ const elements = {
     warningSound: document.getElementById("warning-sound"),
     apiDocsButton: document.getElementById("apiDocsButton"),
     apiDocumentationModal: document.getElementById("api_documentation_modal"),
-
-    // --- Elemen Statistik ---
     statisticsContainer: document.getElementById("statisticsContainer"),
     statsContent: document.getElementById("statsContent"),
     statsLoading: document.getElementById("statsLoading"),
@@ -66,60 +64,67 @@ elements.area.addEventListener("click", (e) => {
     e.stopPropagation();
     elements.input.click();
 });
-
 elements.input.addEventListener("click", (e) => e.stopPropagation());
-
 elements.area.addEventListener("dragover", (e) => {
     e.preventDefault();
     elements.area.classList.add("bg-base-200");
 });
-
 elements.area.addEventListener("dragleave", (e) => {
     if (!elements.area.contains(e.relatedTarget)) {
         elements.area.classList.remove("bg-base-200");
     }
 });
-
 elements.area.addEventListener("drop", (e) => {
     e.preventDefault();
     elements.area.classList.remove("bg-base-200");
     const files = e.dataTransfer.files;
     if (files.length) {
         elements.input.files = files;
-        handleFileSelection(files[0]);
+        handleFileSelection(files);
     }
 });
-
 elements.input.addEventListener("change", (e) => {
     if (e.target.files.length) {
-        handleFileSelection(e.target.files[0]);
+        handleFileSelection(e.target.files);
     }
 });
 
 // --- UI Update Functions ---
-const handleFileSelection = (file) => {
-    // Validasi ukuran file di sisi klien sebelum menampilkan info
-    if (file.size > 50 * 1024 * 1024) {
-        displayFileInfo({
-            name: `${file.name} (ERROR)`,
-            size: file.size
-        });
-        showResult("error", "File terlalu besar! Maksimal 50 MB.");
-        updateButtonState(false); // Disable tombol upload
+const handleFileSelection = (files) => {
+    if (files.length > 10) {
+        showResult("error", "Tidak dapat memilih lebih dari 10 file.");
+        updateButtonState(false);
+        elements.info.classList.add("hidden");
+        elements.input.value = ""; // Reset pilihan file
         return;
     }
-    displayFileInfo(file);
+
+    let totalSize = 0;
+    let anyFileTooLarge = false;
+    for (const file of files) {
+        totalSize += file.size;
+        if (file.size > 50 * 1024 * 1024) {
+            anyFileTooLarge = true;
+        }
+    }
+
+    if (anyFileTooLarge) {
+        showResult("error", "Salah satu file melebihi batas 50 MB.");
+        updateButtonState(false);
+        elements.name.textContent = `${files.length} file dipilih (ADA YANG TERLALU BESAR)`;
+        elements.size.textContent = `Total Size: ${formatFileSize(totalSize)}`;
+        elements.info.classList.remove("hidden");
+        return;
+    }
+
+    elements.name.textContent = `${files.length} file dipilih`;
+    elements.size.textContent = `Total Size: ${formatFileSize(totalSize)}`;
+    elements.info.classList.remove("hidden");
     updateButtonState(true);
 };
 
 const updateButtonState = (isValid) => {
     elements.submit.disabled = !isValid;
-};
-
-const displayFileInfo = (file) => {
-    elements.name.textContent = `File: ${file.name}`;
-    elements.size.textContent = `Size: ${formatFileSize(file.size)}`;
-    elements.info.classList.remove("hidden");
 };
 
 const formatFileSize = (bytes) => {
@@ -145,14 +150,14 @@ const setLoadingState = (isLoading) => {
     }
 };
 
-const showResult = (type, message, relativeUrl = null) => {
-    const fullUrl = relativeUrl ? `${relativeUrl}` : null;
-    elements.result.value = fullUrl || message;
-    elements.copyButton.disabled = (type !== "success" || !fullUrl);
-
-    if (type === "success" && fullUrl) {
-         saveToHistory(fullUrl);
+const showResult = (type, message, urls = []) => {
+    if (type === "success" && urls.length > 0) {
+        elements.result.value = urls.join('\n');
+        urls.forEach(url => saveToHistory(url));
+    } else {
+        elements.result.value = message;
     }
+    elements.copyButton.disabled = type !== "success" || urls.length === 0;
 };
 
 const resetForm = () => {
@@ -168,22 +173,18 @@ let currentPage = 1;
 const itemsPerPage = 5;
 let filteredHistory = [];
 let selectedItems = new Set();
-
 const saveToHistory = (url) => {
     const history = getHistory();
     history.unshift({ url, timestamp: Date.now() });
     localStorage.setItem("uploadHistory", JSON.stringify(history));
 };
-
 const getHistory = () => JSON.parse(localStorage.getItem("uploadHistory") || "[]");
-
 const removeFromHistory = (url) => {
     let history = getHistory();
     history = history.filter((item) => item.url !== url);
     localStorage.setItem("uploadHistory", JSON.stringify(history));
     renderHistory();
 };
-
 const removeSelectedFromHistory = () => {
     let history = getHistory();
     history = history.filter((item) => !selectedItems.has(item.url));
@@ -191,16 +192,12 @@ const removeSelectedFromHistory = () => {
     selectedItems.clear();
     renderHistory();
 };
-
 const renderHistory = () => {
     const history = getHistory();
     const searchTerm = elements.searchInput.value.toLowerCase();
-
     filteredHistory = history.filter((item) => item.url.toLowerCase().includes(searchTerm));
-
     const totalPages = Math.ceil(filteredHistory.length / itemsPerPage) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
-
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const pageItems = filteredHistory.slice(start, end);
@@ -216,10 +213,7 @@ const renderHistory = () => {
                 <td class="text-right">
                     <div class="join">
                         <button class="btn btn-xs btn-outline btn-info border-black rounded join-item download-link" data-url="${item.url}" title="Download">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
                         </button>
                         <button class="btn btn-xs btn-outline border-black rounded join-item copy-link" data-url="${item.url}">Copy</button>
                         <button class="btn btn-xs btn-outline btn-error border-black rounded join-item delete-link" data-url="${item.url}">Delete</button>
@@ -228,15 +222,12 @@ const renderHistory = () => {
             </tr>
         `).join("");
     }
-
     elements.currentPageSpan.textContent = currentPage;
     elements.totalPagesSpan.textContent = totalPages;
     elements.prevPage.disabled = currentPage === 1;
     elements.nextPage.disabled = currentPage === totalPages;
-
     updateDeleteSelectedButton();
 };
-
 const updateDeleteSelectedButton = () => {
     elements.deleteSelectedButton.disabled = selectedItems.size === 0;
 };
@@ -244,30 +235,21 @@ const updateDeleteSelectedButton = () => {
 // --- Statistik Functions ---
 async function renderStatistics() {
     const { statsLoading, statsData, statsContent, hourlyActivityChart } = elements;
-    
     statsLoading.classList.remove('hidden');
     statsData.classList.add('hidden');
-
     try {
         const response = await axios.get(`${API_BASE_URL}/statistics`);
         const stats = response.data;
-
-        // Total Storage: 2 TB
         const totalStorageQuota = 2 * 1024 * 1024 * 1024 * 1024;
         const usedStorage = stats.storage.totalSize;
         const percentage = (usedStorage / totalStorageQuota) * 100;
-
         elements.statsStorageProgress.value = percentage;
         elements.statsStorageUsageText.textContent = `${formatFileSize(usedStorage)} / 2 TB`;
         elements.statsStoragePercentage.textContent = `${percentage.toFixed(4)}%`;
-
-        // Global Stats
         elements.statsTotalFiles.textContent = stats.storage.totalFiles.toLocaleString('id-ID');
         elements.statsTotalSize.textContent = formatFileSize(stats.storage.totalSize);
         elements.statsUploadSuccess.textContent = stats.storage.uploadSuccess.toLocaleString('id-ID');
         elements.statsUploadFailed.textContent = stats.storage.uploadFailed.toLocaleString('id-ID');
-
-        // Period Stats
         elements.statsTodayFiles.textContent = stats.period.today.files.toLocaleString('id-ID');
         elements.statsTodaySize.textContent = formatFileSize(stats.period.today.size);
         elements.statsWeekFiles.textContent = stats.period.thisWeek.files.toLocaleString('id-ID');
@@ -276,66 +258,48 @@ async function renderStatistics() {
         elements.statsMonthSize.textContent = formatFileSize(stats.period.thisMonth.size);
         elements.statsYearFiles.textContent = stats.period.thisYear.files.toLocaleString('id-ID');
         elements.statsYearSize.textContent = formatFileSize(stats.period.thisYear.size);
-        
-        // 24 Hour Activity Chart
-        hourlyActivityChart.innerHTML = ''; // Clear previous chart
+        hourlyActivityChart.innerHTML = '';
         const hourlyData = stats.activity.last24Hours;
-        const maxActivity = Math.max(...hourlyData) || 1; // Avoid division by zero
-        
+        const maxActivity = Math.max(...hourlyData) || 1;
         const now = new Date();
         const currentHour = now.getHours();
-        
         const hoursOrder = [];
         for (let i = 0; i < 24; i++) {
              hoursOrder.push((currentHour - (23 - i) + 24) % 24);
         }
-
         hoursOrder.forEach(hour => {
             const count = hourlyData[hour] || 0;
             const barHeight = (count / maxActivity) * 100;
             const bar = document.createElement('div');
             bar.className = 'w-full bg-primary rounded-t tooltip';
-            bar.style.height = `${Math.max(barHeight, 2)}%`; // Minimum height of 2% for visibility
+            bar.style.height = `${Math.max(barHeight, 2)}%`;
             bar.dataset.tip = `${count} uploads at ${hour}:00`;
             hourlyActivityChart.appendChild(bar);
         });
-
-        // Show data and hide loading
         statsLoading.classList.add('hidden');
         statsData.classList.remove('hidden');
-
     } catch (error) {
         console.error('Error fetching statistics:', error);
         elements.statsContent.innerHTML = `<div class="alert alert-error rounded"><span>Gagal memuat statistik.</span></div>`;
     }
 }
 
-// --- Event Delegation for History Actions ---
+// --- Event Delegation & Core Functions ---
 elements.historyTableBody.addEventListener('click', async (e) => {
     const copyBtn = e.target.closest('.copy-link');
-    if (copyBtn) {
-        copyToClipboard(copyBtn.dataset.url, copyBtn, true);
-        return;
-    }
-
+    if (copyBtn) { copyToClipboard(copyBtn.dataset.url, copyBtn, true); return; }
     const downloadBtn = e.target.closest('.download-link');
-    if (downloadBtn) {
-        const fileName = downloadBtn.dataset.url.split('/').pop();
-        await downloadFile(fileName, downloadBtn);
-        return;
-    }
-
+    if (downloadBtn) { await downloadFile(downloadBtn.dataset.url.split('/').pop(), downloadBtn); return; }
     const deleteBtn = e.target.closest('.delete-link');
     if (deleteBtn) {
         const urlToDelete = deleteBtn.dataset.url;
         const fileName = urlToDelete.split('/').pop();
         deleteBtn.innerHTML = `<span class="loading loading-spinner loading-xs"></span>`;
         deleteBtn.disabled = true;
-
         try {
             await axios.delete(`${API_BASE_URL}/files/${fileName}`);
             removeFromHistory(urlToDelete);
-            await renderStatistics(); // Refresh statistik
+            await renderStatistics();
         } catch (error) {
             console.error('Error deleting file:', error.response ? error.response.data : error.message);
             elements.warningModal.querySelector('.py-2').textContent = `Gagal menghapus file: ${error.response ? error.response.data.error : error.message}`;
@@ -344,10 +308,8 @@ elements.historyTableBody.addEventListener('click', async (e) => {
             deleteBtn.innerHTML = `Delete`;
             deleteBtn.disabled = false;
         }
-        return;
     }
 });
-
 elements.historyTableBody.addEventListener('change', (e) => {
     const checkbox = e.target.closest('.item-checkbox');
     if (checkbox) {
@@ -359,27 +321,9 @@ elements.historyTableBody.addEventListener('change', (e) => {
         updateDeleteSelectedButton();
     }
 });
-
-elements.searchInput.addEventListener("input", () => {
-    currentPage = 1;
-    renderHistory();
-});
-
-elements.prevPage.addEventListener("click", () => {
-    if (currentPage > 1) {
-        currentPage--;
-        renderHistory();
-    }
-});
-
-elements.nextPage.addEventListener("click", () => {
-    const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
-    if (currentPage < totalPages) {
-        currentPage++;
-        renderHistory();
-    }
-});
-
+elements.searchInput.addEventListener("input", () => { currentPage = 1; renderHistory(); });
+elements.prevPage.addEventListener("click", () => { if (currentPage > 1) { currentPage--; renderHistory(); } });
+elements.nextPage.addEventListener("click", () => { const totalPages = Math.ceil(filteredHistory.length / itemsPerPage); if (currentPage < totalPages) { currentPage++; renderHistory(); } });
 elements.selectAllCheckbox.addEventListener('change', e => {
      document.querySelectorAll('#historyTableBody .item-checkbox').forEach(cb => {
          cb.checked = e.target.checked;
@@ -388,23 +332,17 @@ elements.selectAllCheckbox.addEventListener('change', e => {
      });
      updateDeleteSelectedButton();
 });
-
 elements.deleteSelectedButton.addEventListener("click", async () => {
     const button = elements.deleteSelectedButton;
     const originalHtml = button.innerHTML;
     button.disabled = true;
     button.innerHTML = `<span class="loading loading-spinner loading-xs"></span> Deleting...`;
-
     const itemsToDelete = Array.from(selectedItems);
-    const deletePromises = itemsToDelete.map(url => {
-        const fileName = url.split('/').pop();
-        return axios.delete(`${API_BASE_URL}/files/${fileName}`);
-    });
-
+    const deletePromises = itemsToDelete.map(url => axios.delete(`${API_BASE_URL}/files/${url.split('/').pop()}`));
     try {
         await Promise.all(deletePromises);
         removeSelectedFromHistory();
-        await renderStatistics(); // Refresh statistik
+        await renderStatistics();
     } catch (error) {
         console.error('Error deleting selected files:', error.response ? error.response.data : error.message);
         elements.warningModal.querySelector('.py-2').textContent = `Gagal menghapus beberapa file: ${error.response ? error.response.data.error : error.message}`;
@@ -415,18 +353,10 @@ elements.deleteSelectedButton.addEventListener("click", async () => {
         button.disabled = selectedItems.size === 0;
     }
 });
-
-elements.historyButton.addEventListener('click', () => {
-    currentPage = 1;
-    renderHistory();
-    elements.historyModal.showModal();
-});
-
-// --- Core Functions ---
+elements.historyButton.addEventListener('click', () => { currentPage = 1; renderHistory(); elements.historyModal.showModal(); });
 const copyToClipboard = (text, buttonElement, isTextButton = false) => {
     const originalContent = buttonElement.innerHTML;
     const successContent = isTextButton ? "Copied!" : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-lg text-success" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/></svg>`;
-
     navigator.clipboard.writeText(text).then(() => {
         buttonElement.innerHTML = successContent;
         if(isTextButton) buttonElement.classList.add("btn-success");
@@ -442,18 +372,12 @@ const copyToClipboard = (text, buttonElement, isTextButton = false) => {
          setTimeout(() => { buttonElement.innerHTML = originalContent; }, 2000);
     });
 };
-
 async function downloadFile(fileName, buttonElement) {
     const originalContent = buttonElement.innerHTML;
     buttonElement.innerHTML = `<span class="loading loading-spinner loading-xs"></span>`;
     buttonElement.disabled = true;
-
     try {
-        const response = await axios({
-            url: `${API_BASE_URL}/download/${fileName}`,
-            method: 'GET',
-            responseType: 'blob',
-        });
+        const response = await axios({ url: `${API_BASE_URL}/download/${fileName}`, method: 'GET', responseType: 'blob' });
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const a = document.createElement('a');
         a.style.display = 'none';
@@ -473,27 +397,27 @@ async function downloadFile(fileName, buttonElement) {
         buttonElement.disabled = false;
     }
 }
-
 elements.copyButton.addEventListener("click", (e) => {
     const text = elements.result.value;
     if (text) copyToClipboard(text, e.currentTarget);
 });
 
-// --- Form Submit Handler with Axios ---
+// --- Form Submit Handler ---
 elements.form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const file = elements.input.files[0];
-    if (!file) {
-        showResult("error", "Please select a file first.");
+    const files = elements.input.files;
+    if (files.length === 0) {
+        showResult("error", "Please select file(s) first.");
         return;
     }
-    // Client-side size check already handled in handleFileSelection
-    if (elements.submit.disabled) {
-        return; 
-    }
+    if (elements.submit.disabled) return;
+
     setLoadingState(true);
     const formData = new FormData();
-    formData.append('file', file);
+    for (const file of files) {
+        formData.append('files', file);
+    }
+
     try {
         const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
             onUploadProgress: (progressEvent) => {
@@ -501,8 +425,8 @@ elements.form.addEventListener("submit", async (e) => {
                 updateProgress(percentCompleted);
             }
         });
-        showResult("success", "File uploaded successfully!", response.data.url);
-        await renderStatistics(); // Refresh statistik setelah upload
+        showResult("success", "Files uploaded successfully!", response.data.urls);
+        await renderStatistics();
     } catch (error) {
         console.error('Upload failed:', error.response ? error.response.data : error.message);
         showResult("error", error.response ? error.response.data.error : "Upload failed.");
@@ -516,7 +440,6 @@ const applyTheme = (theme) => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
 };
-
 elements.themeToggle.addEventListener('change', () => {
     const theme = elements.themeToggle.checked ? 'dark' : 'light';
     applyTheme(theme);
@@ -542,7 +465,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    await renderStatistics(); // Muat statistik saat halaman dibuka
+    await renderStatistics();
 
     elements.loadingOverlay.style.opacity = '0';
     setTimeout(() => {
