@@ -1,5 +1,4 @@
-// Konfigurasi Klien
-const API_BASE_URL = ''; // Gunakan string kosong jika server berjalan di domain yang sama
+const API_BASE_URL = '';
 
 const elements = {
     form: document.getElementById("uploadForm"),
@@ -56,9 +55,8 @@ const elements = {
     hourlyActivityChart: document.getElementById("hourlyActivityChart"),
 };
 
-let filesToUpload = []; // Array untuk menyimpan file yang akan diunggah
+let filesToUpload = [];
 
-// --- Event Listeners for File Input ---
 elements.area.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -504,6 +502,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     await renderStatistics();
+
+    document.body.style.visibility = 'visible';
 
     elements.loadingOverlay.style.opacity = '0';
     setTimeout(() => {
